@@ -1,0 +1,58 @@
+"use client";
+
+import { useState } from "react";
+import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
+import { ChatPanel } from "@/components/chat-panel";
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [currentChat, setCurrentChat] = useState<{ id: number; title: string } | undefined>();
+
+  const handleNewChat = () => {
+    setCurrentChat({
+      id: Date.now(),
+      title: "New Chat",
+    });
+    setIsChatOpen(true);
+  };
+
+  const handleChatClick = (chat: { id: number; title: string }) => {
+    setCurrentChat(chat);
+    setIsChatOpen(true);
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+    setCurrentChat(undefined);
+  };
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar 
+        onNewChat={handleNewChat}
+        onChatClick={handleChatClick}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-hidden">
+          {isChatOpen ? (
+            <ChatPanel
+              isOpen={isChatOpen}
+              onClose={handleCloseChat}
+              currentChat={currentChat}
+            />
+          ) : (
+            <div className="h-full overflow-auto p-6">
+              {children}
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
