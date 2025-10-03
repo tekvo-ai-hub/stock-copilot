@@ -21,6 +21,7 @@ import {
   MessageCircle,
   Plus,
   Clock,
+  Target,
 } from "lucide-react";
 
 const navigation = [
@@ -30,6 +31,7 @@ const navigation = [
   { name: "Portfolio", href: "/portfolio", icon: PieChart },
   { name: "Market Data", href: "/market", icon: Activity },
   { name: "Search", href: "/search", icon: Search },
+  { name: "AI Rules", href: "/rules", icon: Target },
 ];
 
 const chatSection = {
