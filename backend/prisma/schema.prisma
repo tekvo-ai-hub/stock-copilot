@@ -1,0 +1,237 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  firstName String?
+  lastName  String?
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  portfolios     Portfolio[]
+  predictions    Prediction[]
+  chatSessions   ChatSession[]
+  notifications  Notification[]
+  watchlists     Watchlist[]
+
+  @@map("users")
+}
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings    PortfolioHolding[]
+  transactions Transaction[]
+
+  @@map("portfolios")
+}
+
+model PortfolioHolding {
+  id          String   @id @default(cuid())
+  portfolioId String
+  symbol      String
+  shares      Float
+  avgPrice    Float
+  currentPrice Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, symbol])
+  @@map("portfolio_holdings")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  portfolioId String
+  symbol      String
+  type        TransactionType
+  shares      Float
+  price       Float
+  fees        Float    @default(0)
+  total       Float
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Prediction {
+  id          String   @id @default(cuid())
+  userId      String
+  symbol      String
+  model       String
+  timeframe   String
+  currentPrice Float
+  predictedPrice Float
+  confidence  Float
+  status      PredictionStatus @default(ACTIVE)
+  actualPrice Float?
+  accuracy    Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("predictions")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  sessionId   String
+  role        MessageRole
+  content     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  symbol    String
+  name      String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+  @@map("watchlists")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model StockData {
+  id        String   @id @default(cuid())
+  symbol    String
+  timestamp DateTime
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    BigInt
+  createdAt DateTime @default(now())
+
+  @@unique([symbol, timestamp])
+  @@map("stock_data")
+}
+
+model MarketIndex {
+  id        String   @id @default(cuid())
+  symbol    String   @unique
+  name      String
+  price     Float
+  change    Float
+  changePercent Float
+  volume    BigInt
+  marketCap BigInt?
+  updatedAt DateTime @updatedAt
+
+  @@map("market_indices")
+}
+
+model TechnicalIndicator {
+  id        String   @id @default(cuid())
+  symbol    String
+  indicator String
+  timeframe String
+  value     Float
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@unique([symbol, indicator, timeframe, timestamp])
+  @@map("technical_indicators")
+}
+
+// Enums
+enum TransactionType {
+  BUY
+  SELL
+  DIVIDEND
+  SPLIT
+}
+
+enum PredictionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum NotificationType {
+  PREDICTION_ALERT
+  PRICE_ALERT
+  PORTFOLIO_UPDATE
+  MARKET_UPDATE
+  SYSTEM_NOTIFICATION
+}

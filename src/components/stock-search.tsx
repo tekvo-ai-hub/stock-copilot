@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   Filter,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
 } from "lucide-react";
 
 // Mock data for demonstration
@@ -120,14 +121,88 @@ const stocks = [
 
 const sectors = ["All", "Technology", "Healthcare", "Financial Services", "Consumer Discretionary", "Automotive", "Energy"];
 
+interface StockData {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: string;
+  marketCap: string;
+  sector: string;
+  trend: "up" | "down";
+  isWatched: boolean;
+}
+
 export function StockSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSector, setSelectedSector] = useState("All");
   const [sortBy, setSortBy] = useState<"symbol" | "price" | "change" | "marketCap">("symbol");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [stocks, setStocks] = useState<StockData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Search stocks using Finnhub API
+  const searchStocks = async (query: string) => {
+    if (!query.trim()) {
+      setStocks([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(query)}&limit=20`);
+      if (!response.ok) {
+        throw new Error('Failed to search stocks');
+      }
+      
+      const responseData = await response.json();
+      
+      if (!responseData.success) {
+        throw new Error(responseData.error || 'Failed to search stocks');
+      }
+      
+      // Transform backend data to our format
+      const transformedStocks: StockData[] = responseData.data.results.map((stock: unknown) => ({
+        symbol: (stock as { symbol: string }).symbol,
+        name: (stock as { name?: string; description?: string }).name || (stock as { name?: string; description?: string }).description || (stock as { symbol: string }).symbol,
+        price: (stock as { price?: number }).price || 0,
+        change: (stock as { change?: number }).change || 0,
+        changePercent: (stock as { changePercent?: number }).changePercent || 0,
+        volume: (stock as { volume?: number }).volume ? `${((stock as { volume?: number }).volume! / 1000000).toFixed(1)}M` : 'N/A',
+        marketCap: (stock as { marketCap?: number }).marketCap ? `${((stock as { marketCap?: number }).marketCap! / 1000000000).toFixed(1)}B` : 'N/A',
+        sector: (stock as { sector?: string }).sector || 'Unknown',
+        trend: ((stock as { change?: number }).change || 0) >= 0 ? 'up' as const : 'down' as const,
+        isWatched: false,
+      }));
+
+      setStocks(transformedStocks);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Search error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load initial data or search when query changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchStocks(searchQuery);
+      } else {
+        setStocks([]);
+      }
+    }, 500); // Debounce search
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   const filteredStocks = useMemo(() => {
-    let filtered = stocks.filter(stock => {
+    const filtered = stocks.filter(stock => {
       const matchesSearch = stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            stock.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesSector = selectedSector === "All" || stock.sector === selectedSector;
@@ -180,7 +255,7 @@ export function StockSearch() {
     });
 
     return filtered;
-  }, [searchQuery, selectedSector, sortBy, sortOrder]);
+  }, [stocks, searchQuery, selectedSector, sortBy, sortOrder]);
 
   const handleSort = (column: typeof sortBy) => {
     if (sortBy === column) {
@@ -226,7 +301,13 @@ export function StockSearch() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
+                {loading && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 animate-spin" />
+                )}
               </div>
+              {error && (
+                <p className="text-sm text-red-500 mt-2">{error}</p>
+              )}
             </div>
             <div className="flex gap-2">
               <select
@@ -256,7 +337,7 @@ export function StockSearch() {
             <div>
               <CardTitle>Search Results</CardTitle>
               <CardDescription>
-                {filteredStocks.length} stocks found
+                {searchQuery ? `${filteredStocks.length} stocks found` : 'Enter a search term to find stocks'}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -283,42 +364,67 @@ export function StockSearch() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12"></TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort("symbol")}
-                >
-                  Symbol
-                </TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort("price")}
-                >
-                  Price
-                </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort("change")}
-                >
-                  Change
-                </TableHead>
-                <TableHead>Volume</TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort("marketCap")}
-                >
-                  Market Cap
-                </TableHead>
-                <TableHead>Sector</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStocks.map((stock) => (
+          {!searchQuery ? (
+            <div className="text-center py-12">
+              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">Search for Stocks</h3>
+              <p className="text-sm text-muted-foreground">
+                Enter a stock symbol or company name to get started
+              </p>
+            </div>
+          ) : loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">Searching...</h3>
+              <p className="text-sm text-muted-foreground">
+                Finding stocks matching &quot;{searchQuery}&quot;
+              </p>
+            </div>
+          ) : filteredStocks.length === 0 ? (
+            <div className="text-center py-12">
+              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">No stocks found</h3>
+              <p className="text-sm text-muted-foreground">
+                Try searching for a different symbol or company name
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("symbol")}
+                  >
+                    Symbol
+                  </TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("price")}
+                  >
+                    Price
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("change")}
+                  >
+                    Change
+                  </TableHead>
+                  <TableHead>Volume</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort("marketCap")}
+                  >
+                    Market Cap
+                  </TableHead>
+                  <TableHead>Sector</TableHead>
+                  <TableHead className="w-20">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStocks.map((stock) => (
                 <TableRow key={stock.symbol}>
                   <TableCell>
                     <Button
@@ -369,6 +475,7 @@ export function StockSearch() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>

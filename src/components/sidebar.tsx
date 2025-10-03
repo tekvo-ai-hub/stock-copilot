@@ -35,10 +35,10 @@ const navigation = [
 const chatSection = {
   newChat: { name: "New Chat", icon: Plus },
   recentChats: [
-    { id: 1, title: "AAPL Analysis", time: "2 min ago", icon: MessageCircle },
-    { id: 2, title: "Market Trends", time: "1 hour ago", icon: MessageCircle },
-    { id: 3, title: "Portfolio Review", time: "3 hours ago", icon: MessageCircle },
-    { id: 4, title: "NVDA Prediction", time: "Yesterday", icon: MessageCircle },
+    { id: "1", title: "AAPL Analysis", time: "2 min ago", icon: MessageCircle },
+    { id: "2", title: "Market Trends", time: "1 hour ago", icon: MessageCircle },
+    { id: "3", title: "Portfolio Review", time: "3 hours ago", icon: MessageCircle },
+    { id: "4", title: "NVDA Prediction", time: "Yesterday", icon: MessageCircle },
   ]
 };
 
@@ -49,7 +49,7 @@ const bottomTools = [
 
 interface SidebarProps {
   onNewChat?: () => void;
-  onChatClick?: (chat: { id: number; title: string }) => void;
+  onChatClick?: (chat: { id: string; title: string }) => void;
 }
 
 export function Sidebar({ onNewChat, onChatClick }: SidebarProps) {

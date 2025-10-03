@@ -11,17 +11,17 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [currentChat, setCurrentChat] = useState<{ id: number; title: string } | undefined>();
+  const [currentChat, setCurrentChat] = useState<{ id: string; title: string } | undefined>();
 
   const handleNewChat = () => {
     setCurrentChat({
-      id: Date.now(),
+      id: Date.now().toString(),
       title: "New Chat",
     });
     setIsChatOpen(true);
   };
 
-  const handleChatClick = (chat: { id: number; title: string }) => {
+  const handleChatClick = (chat: { id: string; title: string }) => {
     setCurrentChat(chat);
     setIsChatOpen(true);
   };

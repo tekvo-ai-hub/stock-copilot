@@ -30,7 +30,7 @@ interface ChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
   currentChat?: {
-    id: number;
+    id: string;
     title: string;
   };
 }
@@ -154,9 +154,9 @@ export function ChatPanel({ isOpen, onClose, currentChat }: ChatPanelProps) {
               </div>
               <h2 className="text-2xl font-semibold mb-2">Welcome to AI Financial Assistant</h2>
               <p className="text-muted-foreground mb-6 max-w-md">
-                I'm here to help you analyze stocks, make predictions, and answer questions about the financial markets. What would you like to know?
+                I&apos;m here to help you analyze stocks, make predictions, and answer questions about the financial markets. What would you like to know?
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mb-8">
                 <button 
                   className="p-4 border rounded-lg hover:bg-muted transition-colors text-left"
                   onClick={() => setInputValue("Analyze AAPL stock performance")}
@@ -169,7 +169,7 @@ export function ChatPanel({ isOpen, onClose, currentChat }: ChatPanelProps) {
                   onClick={() => setInputValue("What are the top performing stocks today?")}
                 >
                   <h3 className="font-medium mb-1">📈 Market Overview</h3>
-                  <p className="text-sm text-muted-foreground">See today's market movers</p>
+                  <p className="text-sm text-muted-foreground">See today&apos;s market movers</p>
                 </button>
                 <button 
                   className="p-4 border rounded-lg hover:bg-muted transition-colors text-left"
@@ -185,6 +185,29 @@ export function ChatPanel({ isOpen, onClose, currentChat }: ChatPanelProps) {
                   <h3 className="font-medium mb-1">💼 Portfolio Help</h3>
                   <p className="text-sm text-muted-foreground">Get portfolio optimization advice</p>
                 </button>
+              </div>
+              
+              {/* Centered Input for New Chat */}
+              <div className="w-full max-w-2xl">
+                <div className="flex gap-3">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask about stocks, analysis, or predictions..."
+                    className="flex-1 h-12 rounded-2xl border-2 focus:border-primary"
+                  />
+                  <Button 
+                    onClick={handleSendMessage} 
+                    disabled={!inputValue.trim()}
+                    className="h-12 w-12 rounded-2xl"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Press Enter to send, Shift+Enter for new line
+                </p>
               </div>
             </div>
           ) : (
@@ -261,30 +284,32 @@ export function ChatPanel({ isOpen, onClose, currentChat }: ChatPanelProps) {
         </div>
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-4xl mx-auto p-4">
-          <div className="flex gap-3">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about stocks, analysis, or predictions..."
-              className="flex-1 h-12 rounded-2xl border-2 focus:border-primary"
-            />
-            <Button 
-              onClick={handleSendMessage} 
-              disabled={!inputValue.trim()}
-              className="h-12 w-12 rounded-2xl"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+      {/* Input Area - Only show when there are messages */}
+      {messages.length > 0 && (
+        <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-4xl mx-auto p-4">
+            <div className="flex gap-3">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask about stocks, analysis, or predictions..."
+                className="flex-1 h-12 rounded-2xl border-2 focus:border-primary"
+              />
+              <Button 
+                onClick={handleSendMessage} 
+                disabled={!inputValue.trim()}
+                className="h-12 w-12 rounded-2xl"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Press Enter to send, Shift+Enter for new line
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Press Enter to send, Shift+Enter for new line
-          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

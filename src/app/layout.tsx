@@ -14,8 +14,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stock Prediction App",
-  description: "Advanced stock prediction and analysis platform for finance professionals",
+  title: "Stock Copilot - AI-Powered Stock Prediction Platform",
+  description: "Advanced AI-powered stock prediction and analysis platform for finance professionals. Get real-time predictions, technical analysis, and portfolio management tools.",
+  keywords: ["stock prediction", "AI", "finance", "trading", "analysis", "portfolio"],
+  authors: [{ name: "Tekvo AI Hub" }],
+  openGraph: {
+    title: "Stock Copilot - AI-Powered Stock Prediction",
+    description: "Advanced AI-powered stock prediction and analysis platform",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

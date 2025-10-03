@@ -1,6 +1,6 @@
-# Stock Prediction App
+# Stock Copilot - AI-Powered Stock Prediction Platform
 
-A modern, professional stock prediction and analysis platform built with Next.js 15, TypeScript, and shadcn/ui. This application provides comprehensive tools for financial professionals to analyze stocks, generate AI predictions, and manage portfolios.
+A comprehensive, AI-powered stock prediction and analysis platform built with Next.js 15, TypeScript, Supabase, and advanced machine learning models. This application provides professional-grade tools for financial analysis, AI predictions, portfolio management, and real-time market data.
 
 ## Features
 
@@ -40,42 +40,89 @@ A modern, professional stock prediction and analysis platform built with Next.js
 - Sector performance analysis
 - Global market overview
 
-## Tech Stack
+## 🛠️ Tech Stack
 
+### **Frontend**
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui
 - **Charts**: Recharts
 - **Icons**: Lucide React
-- **State Management**: React Hooks
+- **State Management**: React Hooks + Context
 
-## Getting Started
+### **Backend & Database**
+- **Supabase**: Backend-as-a-Service with PostgreSQL
+- **Real-time**: WebSocket subscriptions for live data
+- **Authentication**: JWT-based user authentication
+- **Edge Functions**: Serverless AI processing
+- **Row Level Security**: Secure data access
 
-### Prerequisites
+### **AI & ML Services**
+- **TogetherAI**: Primary AI model provider
+- **OpenAI**: Backup AI services
+- **Custom Models**: LSTM, Transformer, Ensemble, Hybrid
+- **Technical Indicators**: RSI, MACD, Bollinger Bands, etc.
 
-- Node.js 18+ 
-- npm or yarn
+### **External APIs**
+- **Alpha Vantage**: Stock market data
+- **Yahoo Finance**: Real-time quotes
+- **IEX Cloud**: Financial data services
 
-### Installation
+## 🚀 Quick Start
 
-1. Clone the repository:
+### **Prerequisites**
+- Node.js 18+ and npm
+- Supabase account
+- AI API keys (optional)
+
+### **Installation**
+
+1. **Clone the repository:**
 ```bash
-git clone <repository-url>
-cd stock-prediction-app
+git clone https://github.com/your-username/stock-copilot.git
+cd stock-copilot
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Run the development server:
+3. **Set up environment variables:**
+```bash
+cp env.example .env.local
+# Edit .env.local with your Supabase credentials
+```
+
+4. **Set up Supabase backend:**
+   - Create a new Supabase project
+   - Run the database schema from `supabase/schema.sql`
+   - Configure authentication settings
+   - See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed instructions
+
+5. **Run the development server:**
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. **Open [http://localhost:3000](http://localhost:3000) in your browser**
+
+### **Environment Variables**
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# AI Services (Optional)
+TOGETHER_AI_API_KEY=your_together_ai_key
+OPENAI_API_KEY=your_openai_key
+
+# Stock Data APIs (Optional)
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
+IEX_CLOUD_API_KEY=your_iex_cloud_key
+```
 
 ## Project Structure
 
@@ -197,3 +244,7 @@ For support or questions, please open an issue in the repository.
 ---
 
 Built with ❤️ for finance professionals who need powerful, intuitive tools for stock analysis and prediction.
+
+
+
+move settgins and hlep tto the bottom of the UI
