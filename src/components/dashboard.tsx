@@ -20,6 +20,8 @@ import {
 import { StockChart } from "@/components/stock-chart";
 import { PredictionCard } from "@/components/prediction-card";
 import { MarketOverview } from "@/components/market-overview";
+import SimpleRatingSystem from "@/components/simple-rating-system";
+import { ScoringMatrix } from "@/components/scoring-matrix";
 
 // Mock data for demonstration
 const marketMetrics = {
@@ -208,6 +210,8 @@ export function Dashboard() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Market Overview</TabsTrigger>
+          <TabsTrigger value="ratings">Stock Ratings</TabsTrigger>
+          <TabsTrigger value="scoring">Scoring Matrix</TabsTrigger>
           <TabsTrigger value="predictions">AI Predictions</TabsTrigger>
           <TabsTrigger value="analysis">Technical Analysis</TabsTrigger>
         </TabsList>
@@ -267,6 +271,14 @@ export function Dashboard() {
           </div>
 
           <MarketOverview />
+        </TabsContent>
+
+        <TabsContent value="ratings" className="space-y-4">
+          <SimpleRatingSystem />
+        </TabsContent>
+
+        <TabsContent value="scoring" className="space-y-4">
+          <ScoringMatrix />
         </TabsContent>
 
         <TabsContent value="predictions" className="space-y-4">

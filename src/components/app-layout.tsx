@@ -14,11 +14,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [currentChat, setCurrentChat] = useState<{ id: string; title: string } | undefined>();
 
   const handleNewChat = () => {
+    console.log('Opening new chat...');
     setCurrentChat({
       id: Date.now().toString(),
       title: "New Chat",
     });
     setIsChatOpen(true);
+    console.log('Chat should be open now');
   };
 
   const handleChatClick = (chat: { id: string; title: string }) => {
@@ -31,11 +33,18 @@ export function AppLayout({ children }: AppLayoutProps) {
     setCurrentChat(undefined);
   };
 
+  const handleNavigation = () => {
+    // Close chat when navigating to different sections
+    setIsChatOpen(false);
+    setCurrentChat(undefined);
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar 
         onNewChat={handleNewChat}
         onChatClick={handleChatClick}
+        onNavigation={handleNavigation}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />

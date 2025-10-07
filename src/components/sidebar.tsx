@@ -52,9 +52,10 @@ const bottomTools = [
 interface SidebarProps {
   onNewChat?: () => void;
   onChatClick?: (chat: { id: string; title: string }) => void;
+  onNavigation?: () => void;
 }
 
-export function Sidebar({ onNewChat, onChatClick }: SidebarProps) {
+export function Sidebar({ onNewChat, onChatClick, onNavigation }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
@@ -95,6 +96,7 @@ export function Sidebar({ onNewChat, onChatClick }: SidebarProps) {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={onNavigation}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive
@@ -124,7 +126,10 @@ export function Sidebar({ onNewChat, onChatClick }: SidebarProps) {
           <Button
             variant="outline"
             className="w-full justify-start gap-3 h-9"
-            onClick={onNewChat}
+            onClick={() => {
+              console.log('New Chat button clicked');
+              onNewChat?.();
+            }}
           >
             <chatSection.newChat.icon className="w-4 h-4" />
             {!isCollapsed && <span>{chatSection.newChat.name}</span>}
@@ -163,6 +168,7 @@ export function Sidebar({ onNewChat, onChatClick }: SidebarProps) {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={onNavigation}
                 className={cn(
                   "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive

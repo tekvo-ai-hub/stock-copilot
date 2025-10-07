@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,41 +18,103 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-// Mock market data
-const marketIndices = [
-  {
-    name: "S&P 500",
-    symbol: "SPX",
-    value: 4567.89,
-    change: 23.45,
-    changePercent: 0.52,
-    trend: "up" as const,
-  },
-  {
-    name: "Dow Jones",
-    symbol: "DJI",
-    value: 34567.89,
-    change: -123.45,
-    changePercent: -0.36,
-    trend: "down" as const,
-  },
-  {
-    name: "NASDAQ",
-    symbol: "IXIC",
-    value: 14234.56,
-    change: 89.12,
-    changePercent: 0.63,
-    trend: "up" as const,
-  },
-  {
-    name: "Russell 2000",
-    symbol: "RUT",
-    value: 1987.65,
-    change: 12.34,
-    changePercent: 0.62,
-    trend: "up" as const,
-  },
-];
+type Mover = { symbol: string; name: string; price: number; change: number; changePercent: number; volume?: number };
+type SectorRow = { sector: string; change: number; changePercent?: number; marketCap: number };
+
+const formatMarketCap = (value: number) => {
+  if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(1)}T`;
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  return value.toString();
+};
+
+function useMarketData() {
+  const [gainers, setGainers] = useState<Mover[]>([]);
+  const [losers, setLosers] = useState<Mover[]>([]);
+  const [active, setActive] = useState<Mover[]>([]);
+  const [sectors, setSectors] = useState<SectorRow[]>([]);
+  const [indices, setIndices] = useState<IndexRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const finnhubBase = "https://finnhub.io/api/v1";
+  const finnhubToken = process.env.NEXT_PUBLIC_FINNHUB_API_KEY as string | undefined;
+
+  const fetchAll = async () => {
+    try {
+      setLoading(true);
+      if (!finnhubToken) {
+        console.error("Missing NEXT_PUBLIC_FINNHUB_API_KEY for client-side Finnhub calls");
+        return;
+      }
+
+      const fetchQuote = async (symbol: string) => {
+        const resp = await fetch(`${finnhubBase}/quote?symbol=${encodeURIComponent(symbol)}&token=${encodeURIComponent(finnhubToken)}`);
+        if (!resp.ok) throw new Error(`Quote failed: ${symbol}`);
+        const q = await resp.json();
+        return { symbol, currentPrice: q.c, change: q.d, changePercent: q.dp, timestamp: q.t * 1000 };
+      };
+
+      // Indices via liquid ETFs
+      const indexList = [
+        { symbol: 'SPY', name: 'S&P 500' },
+        { symbol: 'DIA', name: 'Dow Jones' },
+        { symbol: 'QQQ', name: 'NASDAQ 100' },
+        { symbol: 'IWM', name: 'Russell 2000' },
+      ];
+      const indexQuotes = await Promise.all(indexList.map(async (idx) => {
+        try {
+          const q = await fetchQuote(idx.symbol);
+          return { symbol: idx.symbol, name: idx.name, price: q.currentPrice, change: q.change, changePercent: q.changePercent } as IndexRow;
+        } catch {
+          return null;
+        }
+      }));
+      setIndices(indexQuotes.filter(Boolean) as IndexRow[]);
+
+      // Popular stocks for movers
+      const popular = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX', 'AMD', 'INTC'];
+      const quotes = (await Promise.all(popular.map(async (s) => {
+        try {
+          const q = await fetchQuote(s);
+          return { symbol: s, name: s, price: q.currentPrice, change: q.change, changePercent: q.changePercent } as Mover;
+        } catch {
+          return null;
+        }
+      }))).filter(Boolean) as Mover[];
+
+      const topGainers = [...quotes].sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
+      const topLosers = [...quotes].sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
+      const mostActive = [...quotes].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent)).slice(0, 5);
+
+      setGainers(topGainers);
+      setLosers(topLosers);
+      setActive(mostActive);
+
+      // Sector performance not available directly; leave empty for now or compute separately
+      setSectors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!cancelled) await fetchAll();
+    };
+    load();
+    const id = setInterval(() => {
+      if (!cancelled) fetchAll();
+    }, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  return { gainers, losers, active, sectors, indices, loading, refetch: fetchAll };
+}
+
+type IndexRow = { symbol: string; name: string; price: number; change: number; changePercent: number };
 
 const topGainers = [
   { symbol: "NVDA", name: "NVIDIA Corporation", price: 875.28, change: 12.45, changePercent: 1.44 },
@@ -89,6 +152,8 @@ const sectors = [
 ];
 
 export function MarketPage() {
+  const { gainers, losers, active, sectors: sectorRows, indices, loading, refetch } = useMarketData();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,7 +165,7 @@ export function MarketPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={refetch} disabled={loading}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
@@ -113,7 +178,7 @@ export function MarketPage() {
 
       {/* Market Indices */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {marketIndices.map((index) => (
+        {indices.map((index) => (
           <Card key={index.symbol}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{index.name}</CardTitle>
@@ -121,16 +186,16 @@ export function MarketPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {index.value.toLocaleString()}
+                {index.price.toLocaleString()}
               </div>
               <div className="flex items-center text-xs text-muted-foreground">
-                {index.trend === "up" ? (
+                {index.change >= 0 ? (
                   <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
                 ) : (
                   <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
                 )}
-                <span className={index.trend === "up" ? "text-green-500" : "text-red-500"}>
-                  {index.change > 0 ? "+" : ""}{index.change} ({index.changePercent > 0 ? "+" : ""}{index.changePercent}%)
+                <span className={index.change >= 0 ? "text-green-500" : "text-red-500"}>
+                  {index.change > 0 ? "+" : ""}{index.change.toFixed(2)} ({index.changePercent > 0 ? "+" : ""}{index.changePercent.toFixed(2)}%)
                 </span>
               </div>
             </CardContent>
@@ -162,18 +227,18 @@ export function MarketPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {topGainers.map((stock) => (
+                  {gainers.map((stock) => (
                     <div key={stock.symbol} className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">{stock.symbol}</p>
                         <p className="text-xs text-muted-foreground">{stock.name}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${stock.price}</p>
+                        <p className="font-medium">${stock.price.toFixed(2)}</p>
                         <div className="flex items-center gap-1">
                           <ArrowUpRight className="h-3 w-3 text-green-500" />
                           <span className="text-green-600 text-sm">
-                            +{stock.change} (+{stock.changePercent}%)
+                            {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)} ({stock.changePercent > 0 ? "+" : ""}{stock.changePercent.toFixed(2)}%)
                           </span>
                         </div>
                       </div>
@@ -196,18 +261,18 @@ export function MarketPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {topLosers.map((stock) => (
+                  {losers.map((stock) => (
                     <div key={stock.symbol} className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">{stock.symbol}</p>
                         <p className="text-xs text-muted-foreground">{stock.name}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${stock.price}</p>
+                        <p className="font-medium">${stock.price.toFixed(2)}</p>
                         <div className="flex items-center gap-1">
                           <ArrowDownRight className="h-3 w-3 text-red-500" />
                           <span className="text-red-600 text-sm">
-                            {stock.change} ({stock.changePercent}%)
+                            {stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
                           </span>
                         </div>
                       </div>
@@ -230,14 +295,14 @@ export function MarketPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mostActive.map((stock) => (
+                  {active.map((stock) => (
                     <div key={stock.symbol} className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">{stock.symbol}</p>
                         <p className="text-xs text-muted-foreground">{stock.volume}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${stock.price}</p>
+                        <p className="font-medium">${stock.price.toFixed(2)}</p>
                         <div className="flex items-center gap-1">
                           {stock.change > 0 ? (
                             <ArrowUpRight className="h-3 w-3 text-green-500" />
@@ -245,7 +310,7 @@ export function MarketPage() {
                             <ArrowDownRight className="h-3 w-3 text-red-500" />
                           )}
                           <span className={stock.change > 0 ? "text-green-600" : "text-red-600"} text-sm>
-                            {stock.change > 0 ? "+" : ""}{stock.change} ({stock.changePercent > 0 ? "+" : ""}{stock.changePercent}%)
+                            {stock.change > 0 ? "+" : ""}{stock.change.toFixed(2)} ({stock.changePercent > 0 ? "+" : ""}{stock.changePercent.toFixed(2)}%)
                           </span>
                         </div>
                       </div>
@@ -276,16 +341,16 @@ export function MarketPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sectors.map((sector) => (
-                    <TableRow key={sector.name}>
-                      <TableCell className="font-medium">{sector.name}</TableCell>
-                      <TableCell>{sector.marketCap}</TableCell>
+                  {sectorRows.map((sector) => (
+                    <TableRow key={sector.sector}>
+                      <TableCell className="font-medium">{sector.sector}</TableCell>
+                      <TableCell>{formatMarketCap(sector.marketCap)}</TableCell>
                       <TableCell>
                         <Badge
-                          variant={sector.trend === "up" ? "default" : "destructive"}
+                          variant={sector.change >= 0 ? "default" : "destructive"}
                           className="flex items-center gap-1 w-fit"
                         >
-                          {sector.trend === "up" ? (
+                          {sector.change >= 0 ? (
                             <TrendingUp className="h-3 w-3" />
                           ) : (
                             <TrendingDown className="h-3 w-3" />
@@ -297,12 +362,12 @@ export function MarketPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
                             <div 
-                              className={`h-full ${sector.trend === "up" ? "bg-green-500" : "bg-red-500"}`}
+                              className={`h-full ${sector.change >= 0 ? "bg-green-500" : "bg-red-500"}`}
                               style={{ width: `${Math.abs(sector.change) * 50}%` }}
                             />
                           </div>
                           <span className="text-sm text-muted-foreground">
-                            {sector.trend === "up" ? "Outperforming" : "Underperforming"}
+                            {sector.change >= 0 ? "Outperforming" : "Underperforming"}
                           </span>
                         </div>
                       </TableCell>
